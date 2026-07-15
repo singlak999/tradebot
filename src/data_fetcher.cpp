@@ -197,10 +197,7 @@ SymbolInfo DataFetcher::get_symbol_info(const std::string& symbol) {
     }
 
     double raw_price = candles.back().close;
-
-    // Add micro-jitter to simulate live tick variation
-    double jitter = jitter_dist_(rng_);
-    info.price = raw_price + raw_price * jitter;
+    info.price = raw_price;
 
     // Calculate change from first candle's open
     double open_price = candles.front().open;
