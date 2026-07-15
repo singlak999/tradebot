@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Indian F&O Trading Bot Simulation Dashboard - Real-time portfolio tracking, technical analysis, and automated strategy execution for NIFTY, Bank NIFTY, and top Indian stocks.">
+    <meta name="keywords" content="F&O trading, Indian stock market, NIFTY, Bank NIFTY, trading bot, simulation">
+    <meta name="author" content="F&O Trading Bot">
+    <meta name="theme-color" content="#0a0e17">
+    <title>F&O Trading Bot - Live Dashboard</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/css/style.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
+</head>
+<body>
+
+    <!-- ===== Header Bar ===== -->
+    <header class="header">
+        <div class="header-left">
+            <h1 class="header-title">
+                <span class="lightning">⚡</span> F&O Trading Bot
+            </h1>
+        </div>
+        <div class="header-right">
+            <div id="clock" class="clock mono">Loading...</div>
+            <span id="market-status" class="market-status closed">MARKET CLOSED</span>
+            <a id="upstox-login-btn" href="/api/auth/upstox/login" target="_blank" class="btn btn-outline" style="margin-right: 16px; padding: 6px 12px; border-color: #3b82f6; color: #3b82f6; text-decoration: none; border-radius: 4px; font-size: 14px;">🔑 Login to Upstox</a>
+            <div id="connection-status" class="connection-status">
+                <span class="status-dot"></span>
+                <span>Connected</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== Control Panel ===== -->
+    <nav class="control-panel" aria-label="Simulation Controls">
+        <div class="control-group">
+            <label for="symbol-select" class="control-label">Symbol</label>
+            <select id="symbol-select" aria-label="Select trading symbol">
+                <option value="ALL">ALL (Simulate All Symbols)</option>
+                <option value="NIFTY">NIFTY 50</option>
+                <option value="BANKNIFTY">Bank NIFTY</option>
+                <option value="RELIANCE">RELIANCE</option>
+                <option value="TCS">TCS</option>
+                <option value="HDFCBANK">HDFC Bank</option>
+                <option value="ADANIENT">Adani Enterprises</option>
+                <option value="ADANIPORTS">Adani Ports</option>
+                <option value="ADANIGREEN">Adani Green Energy</option>
+                <option value="ADANIPOWER">Adani Power</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="strategy-select" class="control-label">Strategy</label>
+            <select id="strategy-select" aria-label="Select trading strategy">
+                <option value="momentum_scalper">Momentum Scalper</option>
+                <option value="mean_reversion">Mean Reversion</option>
+                <option value="supertrend_follower">Supertrend Follower</option>
+                <option value="combined">Combined Strategy</option>
+            </select>
+        </div>
+
+        <div class="control-buttons">
+            <button id="start-btn" class="btn btn-start" aria-label="Start simulation">
+                ▶ Start Simulation
+            </button>
+            <button id="stop-btn" class="btn btn-stop" disabled aria-label="Stop simulation">
+                ⏹ Stop
+            </button>
+            <button id="reset-btn" class="btn btn-reset" aria-label="Reset simulation">
+                ↻ Reset
+            </button>
+        </div>
+
+        <div class="budget-display">
+            Initial Budget: <span class="mono budget-amount">₹5,000</span>
+        </div>
+    </nav>
+
+    <!-- ===== Main Dashboard Grid ===== -->
+    <main class="dashboard-grid">
+
+        <!-- === Left Column === -->
+        <div class="left-column">
+
+            <!-- Price Chart -->
+            <section class="card chart-card" aria-label="Price Chart">
+                <div class="card-header">
+                    <h2>📈 Price Chart</h2>
+                    <div class="chart-legend">
+                        <span class="legend-item"><span class="legend-dot" style="background:#06b6d4"></span>Price</span>
+                        <span class="legend-item"><span class="legend-dot" style="background:#fbbf24"></span>EMA 9</span>
+                        <span class="legend-item"><span class="legend-dot" style="background:#f97316"></span>EMA 21</span>
+                        <span class="legend-item"><span class="legend-dot" style="background:rgba(0,255,136,0.5)"></span>BB</span>
+                    </div>
+                    <div class="time-range">
+                        <button class="active" data-range="1D">1D</button>
+                        <button data-range="5D">5D</button>
+                        <button data-range="1M">1M</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="price-chart"></canvas>
+                </div>
+            </section>
+
+            <!-- Trade History -->
+            <section class="card trades-card" aria-label="Trade History">
+                <div class="card-header">
+                    <h2>📋 Trade History <span id="trade-count" class="count-badge"></span></h2>
+                </div>
+                <div class="table-container">
+                    <table id="trades-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Type</th>
+                                <th>Symbol</th>
+                                <th>Entry</th>
+                                <th>Exit</th>
+                                <th>P&L</th>
+                                <th>Strategy</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trades-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div id="trades-empty" class="empty-state">
+                    No trades yet. Start the simulation! 🚀
+                </div>
+            </section>
+
+            <!-- Open Positions -->
+            <section class="card open-positions-card" aria-label="Open Positions">
+                <div class="card-header">
+                    <h2>🎯 Open Positions <span id="open-positions-count" class="count-badge"></span></h2>
+                </div>
+                <div class="table-container" style="max-height: 250px;">
+                    <table id="open-positions-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Type</th>
+                                <th>Symbol</th>
+                                <th>Entry</th>
+                                <th>Unrealized P&L</th>
+                                <th>Strategy</th>
+                            </tr>
+                        </thead>
+                        <tbody id="open-positions-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div id="open-positions-empty" class="empty-state">
+                    No open positions right now.
+                </div>
+            </section>
+
+        </div>
+
+        <!-- === Right Column === -->
+        <div class="right-column">
+
+            <!-- Portfolio Summary -->
+            <section class="card portfolio-card" aria-label="Portfolio Summary">
+                <h2>💼 Portfolio Summary</h2>
+                <div class="balance-display">
+                    <label>Current Balance</label>
+                    <div id="current-balance" class="balance-value mono">₹10,000.00</div>
+                </div>
+                <div class="pnl-display">
+                    <span id="total-pnl" class="pnl-value mono">₹0.00</span>
+                    <span id="pnl-pct" class="pnl-pct mono">(0.00%)</span>
+                </div>
+                <div class="balance-progress">
+                    <div class="progress-bar">
+                        <div id="balance-bar" class="progress-fill" style="width: 50%"></div>
+                    </div>
+                    <span class="progress-label mono">Initial: ₹10,000.00</span>
+                </div>
+            </section>
+
+            <!-- Performance Metrics -->
+            <section class="card metrics-card" aria-label="Performance Metrics">
+                <h2>📊 Performance Metrics</h2>
+                <div class="metrics-grid">
+                    <div class="metric-item">
+                        <span class="metric-label">Total Trades</span>
+                        <span id="total-trades" class="metric-value mono">0</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">Win Rate</span>
+                        <span id="win-rate" class="metric-value mono text-cyan">0%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">Max Drawdown</span>
+                        <span id="max-drawdown" class="metric-value mono text-red">0%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">Sharpe Ratio</span>
+                        <span id="sharpe-ratio" class="metric-value mono">0.00</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">Additional Cost</span>
+                        <span id="additional-cost" class="metric-value mono text-red">₹0.00</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-label">Best Trade</span>
+                        <span id="best-trade" class="metric-value mono text-green">₹0.00</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Equity Curve -->
+            <section class="card equity-card" aria-label="Equity Curve">
+                <h2>📉 Equity Curve</h2>
+                <div class="chart-container small-chart">
+                    <canvas id="equity-chart"></canvas>
+                </div>
+            </section>
+
+            <!-- Live Signals -->
+            <section class="card signals-card" aria-label="Live Signals">
+                <h2>🔔 Live Signals <span id="signal-count" class="count-badge"></span></h2>
+                <div id="signals-container" class="signals-container"></div>
+                <div id="signals-empty" class="empty-state">
+                    Waiting for signals... 📡
+                </div>
+            </section>
+
+            <!-- Market Overview -->
+            <section class="card market-card" aria-label="Market Overview">
+                <h2>🌐 Market Overview</h2>
+                <div id="market-cards" class="market-cards-container">
+                    <div class="empty-state">Loading market data...</div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    <!-- Dashboard JS -->
+    <script src="/static/js/dashboard.js" defer></script>
+</body>
+</html>
