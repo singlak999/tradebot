@@ -88,4 +88,4 @@ The engine is pre-mapped with correct Upstox Instrument Keys for the following h
 * Adani Group: `ADANIENT`, `ADANIPORTS`, `ADANIGREEN`, `ADANIPOWER`
 
 ## ⚠️ Disclaimer
-**For Educational Purposes Only.** This software simulates trades. The creator is not responsible for any financial losses incurred if you modify this codebase to place real-money orders. Algorithmic trading carries significant risk.
+**For Educational Purposes Only.** This software simulates trades. I am not responsible for any financial losses incurred if you modify this codebase to place real-money orders. Algorithmic trading carries significant risk.
